@@ -16,6 +16,7 @@ Uses Nix flakes. Enter dev shell with `nix develop` or use direnv (auto-activate
 cargo build                 # Build
 cargo test                  # Run all tests
 cargo test <test_name>      # Run single test
+cargo clippy                # Lint
 nix fmt                     # Format (treefmt: nixfmt + rustfmt)
 nix fmt -- --ci             # Check formatting (CI mode)
 nix build                   # Full build via Nix
@@ -30,7 +31,21 @@ Cargo workspace with each type system as a separate crate:
 
 ### Algorithm W (`algorithm-w/`)
 
-Implements Hindley-Milner type inference. Core AST in `src/lib.rs`:
+Implements Hindley-Milner type inference with unification.
 
+**Module structure:**
+- `ast.rs` - Core types: `Expr`, `Lit`, `Type`, `Scheme`
+- `infer.rs` - Type inference engine with unification
+- `error.rs` - Error types using `thiserror`
+
+**Key types:**
 - `Expr` - Lambda calculus with let-bindings: `Var`, `Abs` (λ), `App`, `Let`, `Lit`, `Tuple`
-- `Lit` - Literal values: `Int`, `Bool`
+- `Type` - Types: `Var` (type variable), `Arrow` (→), `Int`, `Bool`, `Tuple`
+- `Scheme` - Polymorphic type scheme (∀ vars. type)
+- `Subst` - Type substitution (`HashMap<TyVar, Type>`)
+- `Env` - Type environment (`BTreeMap<TmVar, Scheme>`)
+
+**Core algorithms in `TypeInference`:**
+- `unify(t1, t2)` - Robinson's unification with occurs check
+- `apply_subst` - Apply substitution to types/schemes/environments
+- `compose_subst` - Compose two substitutions (s1 after s2)
