@@ -1,11 +1,33 @@
 use std::collections::{BTreeMap, HashMap};
 
-use crate::ast::{Expr, Lit, Scheme, Type};
+use crate::{
+    ast::{Scheme, Type},
+    error::InferenceError,
+};
 
 pub type TyVar = String;
 pub type TmVar = String;
 pub type Env = BTreeMap<TmVar, Scheme>;
 pub type Subst = HashMap<TyVar, Type>;
+
+#[derive(Debug)]
+pub struct InferenceTree {
+    pub rules: String,
+    pub input: String,
+    pub output: String,
+    pub children: Vec<InferenceTree>,
+}
+
+impl InferenceTree {
+    fn new(rule: &str, input: &str, output: &str, children: Vec<InferenceTree>) -> Self {
+        Self {
+            rules: rule.to_string(),
+            input: input.to_string(),
+            output: output.to_string(),
+            children,
+        }
+    }
+}
 
 pub struct TypeInference {
     counter: usize,
@@ -55,5 +77,16 @@ impl TypeInference {
         env.iter()
             .map(|(k, v)| (k.clone(), Self::apply_subst_scheme(subst, v)))
             .collect()
+    }
+
+    fn unify(t1: &Type, t2: &Type) -> Result<(Subst, InferenceTree), InferenceError> {
+        let input = format!("{} - {}", t1, t2);
+
+        match (t1, t2) {
+            (Type::Int, Type::Int) | (Type::Bool, Type::Bool) => {
+                let tree = InferenceTree::new("Unify-Base", &input, "{}", vec![]);
+                Ok((HashMap::new(), tree))
+            }
+        }
     }
 }
