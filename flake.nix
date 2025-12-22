@@ -29,8 +29,6 @@
         let
           mcpConfig = inputs.mcp-servers-nix.lib.mkConfig pkgs {
             programs = {
-              fetch.enable = true;
-              serena.enable = true;
               nixos.enable = true;
             };
           };
