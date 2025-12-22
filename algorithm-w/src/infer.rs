@@ -92,19 +92,15 @@ impl TypeInference {
         let input = format!("{} - {}", t1, t2);
 
         match (t1, t2) {
-            // U-Int, U-Bool
-            //
-            // ─────────────────────
+            // ───────────────────── (U-Int, U-Bool)
             // unify(τ, τ) = ∅
             (Type::Int, Type::Int) | (Type::Bool, Type::Bool) => {
                 let tree = InferenceTree::new("Unify-Base", &input, "{}", vec![]);
                 Ok((HashMap::new(), tree))
             }
 
-            // U-VarL, U-VarR
-            //
             // α ∉ ftv(τ)
-            // ──────────────────────
+            // ────────────────────── (U-VarL, U-VarR)
             // unify(α, τ) = [α ↦ τ]
             (Type::Var(v), ty) | (ty, Type::Var(v)) => {
                 if ty == &Type::Var(v.clone()) {
@@ -124,10 +120,8 @@ impl TypeInference {
                 }
             }
 
-            // U-Arrow
-            //
             // S₁ = unify(τ₁, τ₃)    S₂ = unify(S₁(τ₂), S₁(τ₄))
-            // ─────────────────────────────────────────────────
+            // ───────────────────────────────────────────────── (U-Arrow)
             // unify(τ₁ → τ₂, τ₃ → τ₄) = S₂ ∘ S₁
             (Type::Arrow(a1, a2), Type::Arrow(b1, b2)) => {
                 let (s1, tree1) = Self::unify(a1, b1)?;
@@ -140,10 +134,8 @@ impl TypeInference {
                 Ok((final_subst, tree))
             }
 
-            // U-Tuple
-            //
             // S₁ = unify(τ₁, τ₃)    S₂ = unify(S₁(τ₂), S₁(τ₄))
-            // ─────────────────────────────────────────────────
+            // ───────────────────────────────────────────────── (U-Tuple)
             // unify((τ₁, τ₂), (τ₃, τ₄)) = S₂ ∘ S₁
             (Type::Tuple(ts1), Type::Tuple(ts2)) => {
                 if ts1.len() != ts2.len() {
@@ -200,10 +192,8 @@ impl TypeInference {
         }
     }
 
-    // T-Var
-    //
     // x : σ ∈ Γ    τ = inst(σ)
-    // ─────────────────────────
+    // ───────────────────────── (T-Var)
     //        Γ ⊢ x : τ
     fn infer_var(
         env: &Env,
@@ -213,10 +203,8 @@ impl TypeInference {
         unimplemented!()
     }
 
-    // T-Lam
-    //
     // Γ, x : α ⊢ e : τ    α fresh
-    // ─────────────────────────────
+    // ───────────────────────────── (T-Lam)
     //    Γ ⊢ λx. e : α → τ
     fn infer_abs(
         env: &Env,
@@ -227,10 +215,8 @@ impl TypeInference {
         unimplemented!()
     }
 
-    // T-App
-    //
     // Γ ⊢ e₁ : τ₁    Γ ⊢ e₂ : τ₂    α fresh    S = unify(τ₁, τ₂ → α)
-    // ──────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────── (T-App)
     //                     Γ ⊢ e₁ e₂ : S(α)
     fn infer_app(
         env: &Env,
@@ -241,10 +227,8 @@ impl TypeInference {
         unimplemented!()
     }
 
-    // T-Let
-    //
     // Γ ⊢ e₁ : τ₁    σ = gen(Γ, τ₁)    Γ, x : σ ⊢ e₂ : τ₂
-    // ──────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────── (T-Let)
     //          Γ ⊢ let x = e₁ in e₂ : τ₂
     fn infer_let(
         env: &Env,
@@ -256,10 +240,8 @@ impl TypeInference {
         unimplemented!()
     }
 
-    // T-Tuple
-    //
     // Γ ⊢ e₁ : τ₁    ...    Γ ⊢ eₙ : τₙ
-    // ───────────────────────────────────
+    // ─────────────────────────────────── (T-Tuple)
     //    Γ ⊢ (e₁, ..., eₙ) : (τ₁, ..., τₙ)
     fn infer_tuple(
         env: &Env,
@@ -269,9 +251,7 @@ impl TypeInference {
         unimplemented!()
     }
 
-    // T-LitInt
-    //
-    // ─────────────────
+    // ───────────────── (T-LitInt)
     //    Γ ⊢ n : Int
     fn infer_lit_int(
         env: &Env,
@@ -280,9 +260,7 @@ impl TypeInference {
         unimplemented!()
     }
 
-    // T-LitBool
-    //
-    // ─────────────────
+    // ────────────────── (T-LitBool)
     //    Γ ⊢ b : Bool
     fn infer_lit_bool(
         env: &Env,
