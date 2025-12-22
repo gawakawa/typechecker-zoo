@@ -316,4 +316,83 @@ mod tests {
             ));
         }
     }
+
+    mod occurs_check {
+        use super::*;
+
+        #[test]
+        fn not_in_base_type() {
+            // occurs_check("t0", Int) = false
+            let actual = TypeInference::occurs_check(&"t0".to_string(), &Type::Int);
+            assert!(!actual);
+        }
+
+        #[test]
+        fn same_var() {
+            // occurs_check("t0", t0) = true
+            let actual = TypeInference::occurs_check(&"t0".to_string(), &tyvar("t0"));
+            assert!(actual);
+        }
+
+        #[test]
+        fn different_var() {
+            // occurs_check("t0", t1) = false
+            let actual = TypeInference::occurs_check(&"t0".to_string(), &tyvar("t1"));
+            assert!(!actual);
+        }
+
+        #[test]
+        fn in_arrow_left() {
+            // occurs_check("t0", t0 -> t1) = true
+            let actual =
+                TypeInference::occurs_check(&"t0".to_string(), &arrow(tyvar("t0"), tyvar("t1")));
+            assert!(actual);
+        }
+
+        #[test]
+        fn in_arrow_right() {
+            // occurs_check("t0", t1 -> t0) = true
+            let actual =
+                TypeInference::occurs_check(&"t0".to_string(), &arrow(tyvar("t1"), tyvar("t0")));
+            assert!(actual);
+        }
+
+        #[test]
+        fn not_in_arrow() {
+            // occurs_check("t0", t1 -> t2) = false
+            let actual =
+                TypeInference::occurs_check(&"t0".to_string(), &arrow(tyvar("t1"), tyvar("t2")));
+            assert!(!actual);
+        }
+
+        #[test]
+        fn in_tuple_first() {
+            // occurs_check("t0", (t0, t1)) = true
+            let actual = TypeInference::occurs_check(
+                &"t0".to_string(),
+                &tuple(vec![tyvar("t0"), tyvar("t1")]),
+            );
+            assert!(actual);
+        }
+
+        #[test]
+        fn in_tuple_second() {
+            // occurs_check("t0", (t1, t0)) = true
+            let actual = TypeInference::occurs_check(
+                &"t0".to_string(),
+                &tuple(vec![tyvar("t1"), tyvar("t0")]),
+            );
+            assert!(actual);
+        }
+
+        #[test]
+        fn not_in_tuple() {
+            // occurs_check("t0", (t1, t2)) = false
+            let actual = TypeInference::occurs_check(
+                &"t0".to_string(),
+                &tuple(vec![tyvar("t1"), tyvar("t2")]),
+            );
+            assert!(!actual);
+        }
+    }
 }
