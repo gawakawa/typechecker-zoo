@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    ast::{Scheme, Type},
+    ast::{Expr, Lit, Scheme, Type},
     error::InferenceError,
 };
 
@@ -160,6 +160,80 @@ impl TypeInference {
             Type::Tuple(types) => types.iter().any(|t| Self::occurs_check(var, t)),
             Type::Int | Type::Bool => false,
         }
+    }
+
+    pub fn infer(
+        &mut self,
+        env: &Env,
+        expr: &Expr,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        match expr {
+            Expr::Lit(Lit::Int(_)) => Self::infer_lit_int(env, expr),
+            Expr::Lit(Lit::Bool(_)) => Self::infer_lit_bool(env, expr),
+            Expr::Var(name) => Self::infer_var(env, expr, name),
+            Expr::Abs(param, body) => Self::infer_abs(env, expr, param, body),
+            Expr::App(func, arg) => Self::infer_app(env, expr, func, arg),
+            Expr::Let(var, value, body) => Self::infer_let(env, expr, var, value, body),
+            Expr::Tuple(exprs) => Self::infer_tuple(env, expr, exprs),
+        }
+    }
+
+    fn infer_var(
+        env: &Env,
+        expr: &Expr,
+        name: &str,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
+    }
+
+    fn infer_abs(
+        env: &Env,
+        expr: &Expr,
+        param: &str,
+        body: &Expr,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
+    }
+
+    fn infer_app(
+        env: &Env,
+        expr: &Expr,
+        func: &Expr,
+        arg: &Expr,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
+    }
+
+    fn infer_let(
+        env: &Env,
+        expr: &Expr,
+        var: &str,
+        value: &Expr,
+        body: &Expr,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
+    }
+
+    fn infer_tuple(
+        env: &Env,
+        expr: &Expr,
+        exprs: &[Expr],
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
+    }
+
+    fn infer_lit_int(
+        env: &Env,
+        expr: &Expr,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
+    }
+
+    fn infer_lit_bool(
+        env: &Env,
+        expr: &Expr,
+    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+        unimplemented!()
     }
 }
 
