@@ -92,10 +92,19 @@ impl TypeInference {
         let input = format!("{} - {}", t1, t2);
 
         match (t1, t2) {
+            // U-Int, U-Bool
+            //
+            // ─────────────────────
+            // unify(τ, τ) = ∅
             (Type::Int, Type::Int) | (Type::Bool, Type::Bool) => {
                 let tree = InferenceTree::new("Unify-Base", &input, "{}", vec![]);
                 Ok((HashMap::new(), tree))
             }
+            // U-VarL, U-VarR
+            //
+            // α ∉ ftv(τ)
+            // ──────────────────────
+            // unify(α, τ) = [α ↦ τ]
             (Type::Var(v), ty) | (ty, Type::Var(v)) => {
                 if ty == &Type::Var(v.clone()) {
                     let tree = InferenceTree::new("Unify-Var-Same", &input, "{}", vec![]);
@@ -113,6 +122,11 @@ impl TypeInference {
                     Ok((subst, tree))
                 }
             }
+            // U-Arrow
+            //
+            // S₁ = unify(τ₁, τ₃)    S₂ = unify(S₁(τ₂), S₁(τ₄))
+            // ─────────────────────────────────────────────────
+            // unify(τ₁ → τ₂, τ₃ → τ₄) = S₂ ∘ S₁
             (Type::Arrow(a1, a2), Type::Arrow(b1, b2)) => {
                 let (s1, tree1) = Self::unify(a1, b1)?;
                 let a2_subst = Self::apply_subst(&s1, a2);
@@ -123,6 +137,11 @@ impl TypeInference {
                 let tree = InferenceTree::new("Unify-Arrow", &input, &output, vec![tree1, tree2]);
                 Ok((final_subst, tree))
             }
+            // U-Tuple
+            //
+            // S₁ = unify(τ₁, τ₃)    S₂ = unify(S₁(τ₂), S₁(τ₄))
+            // ─────────────────────────────────────────────────
+            // unify((τ₁, τ₂), (τ₃, τ₄)) = S₂ ∘ S₁
             (Type::Tuple(ts1), Type::Tuple(ts2)) => {
                 if ts1.len() != ts2.len() {
                     return Err(InferenceError::TupleLengthMismatch {
