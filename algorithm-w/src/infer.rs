@@ -100,6 +100,7 @@ impl TypeInference {
                 let tree = InferenceTree::new("Unify-Base", &input, "{}", vec![]);
                 Ok((HashMap::new(), tree))
             }
+
             // U-VarL, U-VarR
             //
             // α ∉ ftv(τ)
@@ -122,6 +123,7 @@ impl TypeInference {
                     Ok((subst, tree))
                 }
             }
+
             // U-Arrow
             //
             // S₁ = unify(τ₁, τ₃)    S₂ = unify(S₁(τ₂), S₁(τ₄))
@@ -137,6 +139,7 @@ impl TypeInference {
                 let tree = InferenceTree::new("Unify-Arrow", &input, &output, vec![tree1, tree2]);
                 Ok((final_subst, tree))
             }
+
             // U-Tuple
             //
             // S₁ = unify(τ₁, τ₃)    S₂ = unify(S₁(τ₂), S₁(τ₄))
