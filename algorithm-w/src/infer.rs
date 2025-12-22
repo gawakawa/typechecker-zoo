@@ -162,3 +162,158 @@ impl TypeInference {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tyvar(name: &str) -> Type {
+        Type::Var(name.to_string())
+    }
+
+    fn arrow(t1: Type, t2: Type) -> Type {
+        Type::Arrow(Box::new(t1), Box::new(t2))
+    }
+
+    fn tuple(types: Vec<Type>) -> Type {
+        Type::Tuple(types)
+    }
+
+    mod unify {
+        use super::*;
+
+        #[test]
+        fn base_type_int() {
+            // unify(Int, Int) = {}
+            let (actual, _) = TypeInference::unify(&Type::Int, &Type::Int).unwrap();
+            let expected: Subst = HashMap::new();
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn base_type_bool() {
+            // unify(Bool, Bool) = {}
+            let (actual, _) = TypeInference::unify(&Type::Bool, &Type::Bool).unwrap();
+            let expected: Subst = HashMap::new();
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn same_tyvar() {
+            // unify(t0, t0) = {}
+            let (actual, _) = TypeInference::unify(&tyvar("t0"), &tyvar("t0")).unwrap();
+            let expected: Subst = HashMap::new();
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn tyvar_with_concrete_type() {
+            // unify(t0, Int) = {Int/t0}
+            let (actual, _) = TypeInference::unify(&tyvar("t0"), &Type::Int).unwrap();
+            let expected: Subst = HashMap::from([("t0".to_string(), Type::Int)]);
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn concrete_type_with_tyvar() {
+            // unify(Int, t0) = {Int/t0}
+            let (actual, _) = TypeInference::unify(&Type::Int, &tyvar("t0")).unwrap();
+            let expected: Subst = HashMap::from([("t0".to_string(), Type::Int)]);
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn arrow_simple() {
+            // unify(t0 -> t1, Int -> Bool) = {Int/t0, Bool/t1}
+            let t1 = arrow(tyvar("t0"), tyvar("t1"));
+            let t2 = arrow(Type::Int, Type::Bool);
+            let (actual, _) = TypeInference::unify(&t1, &t2).unwrap();
+            let expected: Subst = HashMap::from([
+                ("t0".to_string(), Type::Int),
+                ("t1".to_string(), Type::Bool),
+            ]);
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn arrow_with_substitution_propagation() {
+            // unify(t0 -> t0, Int -> t1) = {Int/t0, Int/t1}
+            let t1 = arrow(tyvar("t0"), tyvar("t0"));
+            let t2 = arrow(Type::Int, tyvar("t1"));
+            let (actual, _) = TypeInference::unify(&t1, &t2).unwrap();
+            let expected: Subst =
+                HashMap::from([("t0".to_string(), Type::Int), ("t1".to_string(), Type::Int)]);
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn tuple_simple() {
+            // unify((t0, t1), (Int, Bool)) = {Int/t0, Bool/t1}
+            let t1 = tuple(vec![tyvar("t0"), tyvar("t1")]);
+            let t2 = tuple(vec![Type::Int, Type::Bool]);
+            let (actual, _) = TypeInference::unify(&t1, &t2).unwrap();
+            let expected: Subst = HashMap::from([
+                ("t0".to_string(), Type::Int),
+                ("t1".to_string(), Type::Bool),
+            ]);
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn nested_arrow() {
+            // unify((t0 -> t1) -> t2, (Int -> Bool) -> Int) = {Int/t0, Bool/t1, Int/t2}
+            let t1 = arrow(arrow(tyvar("t0"), tyvar("t1")), tyvar("t2"));
+            let t2 = arrow(arrow(Type::Int, Type::Bool), Type::Int);
+            let (actual, _) = TypeInference::unify(&t1, &t2).unwrap();
+            let expected: Subst = HashMap::from([
+                ("t0".to_string(), Type::Int),
+                ("t1".to_string(), Type::Bool),
+                ("t2".to_string(), Type::Int),
+            ]);
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn occurs_check() {
+            // unify(t0, t0 -> Int) should fail with OccursCheck
+            let t1 = tyvar("t0");
+            let t2 = arrow(tyvar("t0"), Type::Int);
+            let actual = TypeInference::unify(&t1, &t2);
+
+            assert!(matches!(
+                actual,
+                Err(InferenceError::OccursCheck { var, ty: _ }) if var == "t0"
+            ));
+        }
+
+        #[test]
+        fn type_mismatch() {
+            // unify(Int, Bool) should fail with UnificationFailure
+            let actual = TypeInference::unify(&Type::Int, &Type::Bool);
+
+            assert!(matches!(
+                actual,
+                Err(InferenceError::UnificationFailure {
+                    expected: Type::Int,
+                    actual: Type::Bool
+                })
+            ));
+        }
+
+        #[test]
+        fn tuple_length_mismatch() {
+            // unify((Int, Bool), (Int,)) should fail with TupleLengthMismatch
+            let t1 = tuple(vec![Type::Int, Type::Bool]);
+            let t2 = tuple(vec![Type::Int]);
+            let actual = TypeInference::unify(&t1, &t2);
+
+            assert!(matches!(
+                actual,
+                Err(InferenceError::TupleLengthMismatch {
+                    left_len: 2,
+                    right_len: 1
+                })
+            ));
+        }
+    }
+}
