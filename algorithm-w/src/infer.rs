@@ -178,6 +178,11 @@ impl TypeInference {
         }
     }
 
+    // T-Var
+    //
+    // x : σ ∈ Γ    τ = inst(σ)
+    // ─────────────────────────
+    //        Γ ⊢ x : τ
     fn infer_var(
         env: &Env,
         expr: &Expr,
@@ -186,6 +191,11 @@ impl TypeInference {
         unimplemented!()
     }
 
+    // T-Lam
+    //
+    // Γ, x : α ⊢ e : τ    α fresh
+    // ─────────────────────────────
+    //    Γ ⊢ λx. e : α → τ
     fn infer_abs(
         env: &Env,
         expr: &Expr,
@@ -195,6 +205,11 @@ impl TypeInference {
         unimplemented!()
     }
 
+    // T-App
+    //
+    // Γ ⊢ e₁ : τ₁    Γ ⊢ e₂ : τ₂    α fresh    S = unify(τ₁, τ₂ → α)
+    // ──────────────────────────────────────────────────────────────
+    //                     Γ ⊢ e₁ e₂ : S(α)
     fn infer_app(
         env: &Env,
         expr: &Expr,
@@ -204,6 +219,11 @@ impl TypeInference {
         unimplemented!()
     }
 
+    // T-Let
+    //
+    // Γ ⊢ e₁ : τ₁    σ = gen(Γ, τ₁)    Γ, x : σ ⊢ e₂ : τ₂
+    // ──────────────────────────────────────────────────────
+    //          Γ ⊢ let x = e₁ in e₂ : τ₂
     fn infer_let(
         env: &Env,
         expr: &Expr,
@@ -214,6 +234,11 @@ impl TypeInference {
         unimplemented!()
     }
 
+    // T-Tuple
+    //
+    // Γ ⊢ e₁ : τ₁    ...    Γ ⊢ eₙ : τₙ
+    // ───────────────────────────────────
+    //    Γ ⊢ (e₁, ..., eₙ) : (τ₁, ..., τₙ)
     fn infer_tuple(
         env: &Env,
         expr: &Expr,
@@ -222,6 +247,10 @@ impl TypeInference {
         unimplemented!()
     }
 
+    // T-LitInt
+    //
+    // ─────────────────
+    //    Γ ⊢ n : Int
     fn infer_lit_int(
         env: &Env,
         expr: &Expr,
@@ -229,6 +258,10 @@ impl TypeInference {
         unimplemented!()
     }
 
+    // T-LitBool
+    //
+    // ─────────────────
+    //    Γ ⊢ b : Bool
     fn infer_lit_bool(
         env: &Env,
         expr: &Expr,
