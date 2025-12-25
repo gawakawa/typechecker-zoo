@@ -45,3 +45,13 @@ pub struct Scheme {
     pub vars: Vec<String>,
     pub ty: Type,
 }
+
+impl std::fmt::Display for Scheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.vars.is_empty() {
+            write!(f, "{}", self.ty)
+        } else {
+            write!(f, "forall {}. {}", self.vars.join(" "), self.ty)
+        }
+    }
+}
