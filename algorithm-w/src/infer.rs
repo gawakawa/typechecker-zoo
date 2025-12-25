@@ -43,6 +43,15 @@ impl TypeInference {
         var
     }
 
+    fn pretty_env(env: &Env) -> String {
+        if env.is_empty() {
+            "{}".to_string()
+        } else {
+            let entries: Vec<String> = env.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
+            format!("{{{}}}", entries.join(", "))
+        }
+    }
+
     fn pretty_subst(subst: &Subst) -> String {
         if subst.is_empty() {
             "{}".to_string()
