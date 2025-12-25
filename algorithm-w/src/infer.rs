@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt::format,
+};
 
 use crate::{
     ast::{Expr, Lit, Scheme, Type},
@@ -177,7 +180,7 @@ impl TypeInference {
     }
 
     pub fn infer(
-        &mut self,
+        &self,
         env: &Env,
         expr: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
@@ -186,7 +189,7 @@ impl TypeInference {
             Expr::Lit(Lit::Bool(_)) => Self::infer_lit_bool(env, expr),
             Expr::Var(name) => Self::infer_var(env, expr, name),
             Expr::Abs(param, body) => Self::infer_abs(env, expr, param, body),
-            Expr::App(func, arg) => Self::infer_app(env, expr, func, arg),
+            Expr::App(func, arg) => self.infer_app(env, expr, func, arg),
             Expr::Let(var, value, body) => Self::infer_let(env, expr, var, value, body),
             Expr::Tuple(exprs) => Self::infer_tuple(env, expr, exprs),
         }
@@ -219,12 +222,30 @@ impl TypeInference {
     // ────────────────────────────────────────────────────────────── (T-App)
     //                     Γ ⊢ e₁ e₂ : S(α)
     fn infer_app(
+        &self,
         env: &Env,
         expr: &Expr,
         func: &Expr,
         arg: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
-        unimplemented!()
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let result_type = Type::Var(self.fresh_tyvar());
+
+        let (s1, func_type, tree1) = self.infer(env, func)?;
+        let env_subst = Self::apply_subst_env(&s1, env);
+        let (s2, arg_type, tree2) = self.infer(&env_subst, arg)?;
+
+        let func_type_subst = Self::apply_subst(&s2, &func_type);
+        let expected_func_type = Type::Arrow(Box::new(arg_type), Box::new(result_type.clone()));
+
+        let (s3, tree3) = Self::unify(&func_type_subst, &expected_func_type)?;
+
+        let final_subst = Self::compose_subst(&s3, &Self::compose_subst(&s2, &s1));
+        let final_type = Self::apply_subst(&s3, &result_type);
+
+        let output = format!("{}", final_type);
+        let tree = InferenceTree::new("T-App", &input, &output, vec![tree1, tree2, tree3]);
+        Ok((final_subst, final_type, tree))
     }
 
     // Γ ⊢ e₁ : τ₁    σ = gen(Γ, τ₁)    Γ, x : σ ⊢ e₂ : τ₂
