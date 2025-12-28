@@ -314,7 +314,9 @@ impl TypeInference {
         env: &Env,
         expr: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
-        unimplemented!()
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let tree = InferenceTree::new("T-Int", &input, "Int", vec![]);
+        Ok((HashMap::new(), Type::Int, tree))
     }
 
     // ────────────────── (T-LitBool)
@@ -323,7 +325,9 @@ impl TypeInference {
         env: &Env,
         expr: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
-        unimplemented!()
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let tree = InferenceTree::new("T-Bool", &input, "Bool", vec![]);
+        Ok((HashMap::new(), Type::Bool, tree))
     }
 
     fn instantiate(&mut self, scheme: &Scheme) -> Type {
