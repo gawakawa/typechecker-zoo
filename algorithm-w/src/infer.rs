@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    fmt::format,
-};
+use std::collections::{BTreeMap, HashMap};
 
 use crate::{
     ast::{Expr, Lit, Scheme, Type},
@@ -189,7 +186,7 @@ impl TypeInference {
     }
 
     pub fn infer(
-        &self,
+        &mut self,
         env: &Env,
         expr: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
@@ -231,7 +228,7 @@ impl TypeInference {
     // ────────────────────────────────────────────────────────────── (T-App)
     //                     Γ ⊢ e₁ e₂ : S(α)
     fn infer_app(
-        &self,
+        &mut self,
         env: &Env,
         expr: &Expr,
         func: &Expr,
