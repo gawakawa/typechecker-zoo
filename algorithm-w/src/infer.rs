@@ -209,7 +209,19 @@ impl TypeInference {
         expr: &Expr,
         name: &str,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
-        unimplemented!()
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+
+        match env.get(name) {
+            Some(scheme) => {
+                let instantiated = Self::instantiate(scheme);
+                let output = format!("{}", instantiated);
+                let tree = InferenceTree::new("T-Var", &input, &output, vec![]);
+                Ok((HashMap::new(), instantiated, tree))
+            }
+            None => Err(InferenceError::UnboundVariable {
+                name: name.to_string(),
+            }),
+        }
     }
 
     // Γ, x : α ⊢ e : τ    α fresh
