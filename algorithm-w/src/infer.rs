@@ -194,7 +194,7 @@ impl TypeInference {
             Expr::Lit(Lit::Int(_)) => Self::infer_lit_int(env, expr),
             Expr::Lit(Lit::Bool(_)) => Self::infer_lit_bool(env, expr),
             Expr::Var(name) => self.infer_var(env, expr, name),
-            Expr::Abs(param, body) => Self::infer_abs(env, expr, param, body),
+            Expr::Abs(param, body) => self.infer_abs(env, expr, param, body),
             Expr::App(func, arg) => self.infer_app(env, expr, func, arg),
             Expr::Let(var, value, body) => Self::infer_let(env, expr, var, value, body),
             Expr::Tuple(exprs) => Self::infer_tuple(env, expr, exprs),
@@ -229,12 +229,29 @@ impl TypeInference {
     // ───────────────────────────── (T-Lam)
     //    Γ ⊢ λx. e : α → τ
     fn infer_abs(
+        &mut self,
         env: &Env,
         expr: &Expr,
         param: &str,
         body: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
-        unimplemented!()
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+
+        let param_type = Type::Var(self.fresh_tyvar());
+        let mut new_env = env.clone();
+        let param_scheme = Scheme {
+            vars: vec![],
+            ty: param_type.clone(),
+        };
+        new_env.insert(param.to_string(), param_scheme);
+
+        let (s1, body_type, tree1) = self.infer(&new_env, body)?;
+        let param_type_subst = Self::apply_subst(&s1, &param_type);
+        let result_type = Type::Arrow(Box::new(param_type_subst), Box::new(body_type));
+
+        let output = format!("{}", result_type);
+        let tree = InferenceTree::new("T-Abs", &input, &output, vec![tree1]);
+        Ok((s1, result_type, tree))
     }
 
     // Γ ⊢ e₁ : τ₁    Γ ⊢ e₂ : τ₂    α fresh    S = unify(τ₁, τ₂ → α)
