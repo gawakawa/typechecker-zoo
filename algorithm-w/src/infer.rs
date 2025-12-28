@@ -193,7 +193,7 @@ impl TypeInference {
         match expr {
             Expr::Lit(Lit::Int(_)) => Self::infer_lit_int(env, expr),
             Expr::Lit(Lit::Bool(_)) => Self::infer_lit_bool(env, expr),
-            Expr::Var(name) => Self::infer_var(env, expr, name),
+            Expr::Var(name) => self.infer_var(env, expr, name),
             Expr::Abs(param, body) => Self::infer_abs(env, expr, param, body),
             Expr::App(func, arg) => self.infer_app(env, expr, func, arg),
             Expr::Let(var, value, body) => Self::infer_let(env, expr, var, value, body),
@@ -205,6 +205,7 @@ impl TypeInference {
     // ───────────────────────── (T-Var)
     //        Γ ⊢ x : τ
     fn infer_var(
+        &mut self,
         env: &Env,
         expr: &Expr,
         name: &str,
@@ -213,7 +214,7 @@ impl TypeInference {
 
         match env.get(name) {
             Some(scheme) => {
-                let instantiated = Self::instantiate(scheme);
+                let instantiated = self.instantiate(scheme);
                 let output = format!("{}", instantiated);
                 let tree = InferenceTree::new("T-Var", &input, &output, vec![]);
                 Ok((HashMap::new(), instantiated, tree))
@@ -306,6 +307,16 @@ impl TypeInference {
         expr: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
         unimplemented!()
+    }
+
+    fn instantiate(&mut self, scheme: &Scheme) -> Type {
+        let mut subst = HashMap::new();
+        for var in &scheme.vars {
+            let fresh = self.fresh_tyvar();
+            subst.insert(var.clone(), Type::Var(fresh));
+        }
+
+        Self::apply_subst(&subst, &scheme.ty)
     }
 }
 
