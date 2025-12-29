@@ -24,9 +24,15 @@
         {
           pkgs,
           system,
+          self',
           ...
         }:
         let
+          toolchain = pkgs.rust-bin.stable.latest.default;
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = toolchain;
+            rustc = toolchain;
+          };
           mcpConfig = inputs.mcp-servers-nix.lib.mkConfig pkgs {
             programs = {
               nixos.enable = true;
@@ -42,41 +48,31 @@
           };
 
           packages = {
-            default = pkgs.rustPlatform.buildRustPackage {
-              pname = "";
+            algorithm-w = rustPlatform.buildRustPackage {
+              pname = "algorithm-w";
               version = "0.1.0";
-
               src = ./.;
-
-              cargoLock = {
-                lockFile = ./Cargo.lock;
-              };
-
-              nativeBuildInputs = [ ];
-
-              buildInputs = [ ];
-
+              cargoLock.lockFile = ./Cargo.lock;
+              cargoBuildFlags = [
+                "-p"
+                "algorithm-w"
+              ];
               meta = {
-                description = "";
+                description = "Hindley-Milner type inference (Algorithm W)";
                 license = pkgs.lib.licenses.mit;
               };
             };
-
+            default = self'.packages.algorithm-w;
             mcp-config = mcpConfig;
           };
 
-          devShells.default =
-            with pkgs;
-            mkShell {
-              buildInputs = [
-                rust-bin.stable.latest.default
-              ];
-
-              shellHook = ''
-                cat ${mcpConfig} > .mcp.json
-                echo "Generated .mcp.json"
-              '';
-            };
+          devShells.default = pkgs.mkShell {
+            buildInputs = [ toolchain ];
+            shellHook = ''
+              cat ${mcpConfig} > .mcp.json
+              echo "Generated .mcp.json"
+            '';
+          };
 
           checks = {
             statix =
