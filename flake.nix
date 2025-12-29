@@ -78,6 +78,44 @@
               '';
             };
 
+          checks = {
+            statix =
+              pkgs.runCommandLocal "statix"
+                {
+                  src = ./.;
+                  nativeBuildInputs = [ pkgs.statix ];
+                }
+                ''
+                  cd $src
+                  statix check .
+                  mkdir "$out"
+                '';
+
+            deadnix =
+              pkgs.runCommandLocal "deadnix"
+                {
+                  src = ./.;
+                  nativeBuildInputs = [ pkgs.deadnix ];
+                }
+                ''
+                  cd $src
+                  deadnix --fail .
+                  mkdir "$out"
+                '';
+
+            actionlint =
+              pkgs.runCommandLocal "actionlint"
+                {
+                  src = ./.;
+                  nativeBuildInputs = [ pkgs.actionlint ];
+                }
+                ''
+                  cd $src
+                  actionlint .github/workflows/*.yml
+                  mkdir "$out"
+                '';
+          };
+
           treefmt = {
             programs = {
               nixfmt.enable = true;
