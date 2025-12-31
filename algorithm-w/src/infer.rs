@@ -369,11 +369,43 @@ impl TypeInference {
     }
 
     fn free_type_vars(&self, ty: &Type) -> HashSet<TyVar> {
-        unimplemented!();
+        match ty {
+            Type::Var(name) => {
+                let mut set = HashSet::new();
+                set.insert(name.clone());
+                set
+            }
+            Type::Arrow(t1, t2) => {
+                let mut set = self.free_type_vars(t1);
+                set.extend(self.free_type_vars(t2));
+                set
+            }
+            Type::Tuple(types) => {
+                let mut set = HashSet::new();
+                for t in types {
+                    set.extend(self.free_type_vars(t));
+                }
+                set
+            }
+            Type::Int | Type::Bool => HashSet::new(),
+        }
+    }
+
+    fn free_type_vars_scheme(&self, scheme: &Scheme) -> HashSet<TyVar> {
+        let mut set = self.free_type_vars(&scheme.ty);
+        // Remove quantified variables
+        for var in &scheme.vars {
+            set.remove(var);
+        }
+        set
     }
 
     fn free_type_vars_env(&self, env: &Env) -> HashSet<TyVar> {
-        unimplemented!();
+        let mut set = HashSet::new();
+        for scheme in env.values() {
+            set.extend(self.free_type_vars_scheme(scheme));
+        }
+        set
     }
 }
 
