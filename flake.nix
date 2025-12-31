@@ -36,7 +36,9 @@
           ...
         }:
         let
-          toolchain = pkgs.rust-bin.stable.latest.default;
+          toolchain = pkgs.rust-bin.stable.latest.default.override {
+            extensions = [ "rust-src" ];
+          };
           rustPlatform = pkgs.makeRustPlatform {
             cargo = toolchain;
             rustc = toolchain;
