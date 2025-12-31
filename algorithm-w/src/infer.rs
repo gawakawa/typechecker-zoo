@@ -288,13 +288,28 @@ impl TypeInference {
     // ────────────────────────────────────────────────────── (T-Let)
     //          Γ ⊢ let x = e₁ in e₂ : τ₂
     fn infer_let(
+        &mut self,
         env: &Env,
         expr: &Expr,
         var: &str,
         value: &Expr,
         body: &Expr,
     ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
-        unimplemented!()
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+
+        let (s1, value_type, tree1) = self.infer(env, value)?;
+        let env_subst = Self::apply_subst_env(&s1, env);
+        let generalized_type = Self::generalize(&env_subst, &value_type);
+
+        let mut new_env = env_subst;
+        new_env.insert(var.to_string(), generalized_type);
+
+        let (s2, body_type, tree2) = self.infer(&new_env, body)?;
+
+        let final_subst = Self::compose_subst(&s2, &s1);
+        let output = format!("{}", body_type);
+        let tree = InferenceTree::new("T-Let", &input, &output, vec![tree1, tree2]);
+        Ok((final_subst, body_type, tree))
     }
 
     // Γ ⊢ e₁ : τ₁    ...    Γ ⊢ eₙ : τₙ
