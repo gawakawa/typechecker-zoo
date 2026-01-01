@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::{
     ast::{Expr, Lit, Scheme, Type},
-    error::InferenceError,
+    error::{InferenceError, Result},
 };
 
 pub type TyVar = String;
@@ -97,7 +97,7 @@ impl TypeInference {
             .collect()
     }
 
-    fn unify(t1: &Type, t2: &Type) -> Result<(Subst, InferenceTree), InferenceError> {
+    fn unify(t1: &Type, t2: &Type) -> Result<(Subst, InferenceTree)> {
         let input = format!("{} - {}", t1, t2);
 
         match (t1, t2) {
@@ -185,11 +185,7 @@ impl TypeInference {
         }
     }
 
-    pub fn infer(
-        &mut self,
-        env: &Env,
-        expr: &Expr,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    pub fn infer(&mut self, env: &Env, expr: &Expr) -> Result<(Subst, Type, InferenceTree)> {
         match expr {
             Expr::Lit(Lit::Int(_)) => Self::infer_lit_int(env, expr),
             Expr::Lit(Lit::Bool(_)) => Self::infer_lit_bool(env, expr),
@@ -209,7 +205,7 @@ impl TypeInference {
         env: &Env,
         expr: &Expr,
         name: &str,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    ) -> Result<(Subst, Type, InferenceTree)> {
         let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
 
         match env.get(name) {
@@ -234,7 +230,7 @@ impl TypeInference {
         expr: &Expr,
         param: &str,
         body: &Expr,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    ) -> Result<(Subst, Type, InferenceTree)> {
         let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
 
         let param_type = Type::Var(self.fresh_tyvar());
@@ -263,7 +259,7 @@ impl TypeInference {
         expr: &Expr,
         func: &Expr,
         arg: &Expr,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    ) -> Result<(Subst, Type, InferenceTree)> {
         let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
         let result_type = Type::Var(self.fresh_tyvar());
 
@@ -294,7 +290,7 @@ impl TypeInference {
         var: &str,
         value: &Expr,
         body: &Expr,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    ) -> Result<(Subst, Type, InferenceTree)> {
         let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
 
         let (s1, value_type, tree1) = self.infer(env, value)?;
@@ -315,20 +311,13 @@ impl TypeInference {
     // Γ ⊢ e₁ : τ₁    ...    Γ ⊢ eₙ : τₙ
     // ─────────────────────────────────── (T-Tuple)
     //    Γ ⊢ (e₁, ..., eₙ) : (τ₁, ..., τₙ)
-    fn infer_tuple(
-        env: &Env,
-        expr: &Expr,
-        exprs: &[Expr],
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    fn infer_tuple(env: &Env, expr: &Expr, exprs: &[Expr]) -> Result<(Subst, Type, InferenceTree)> {
         unimplemented!()
     }
 
     // ───────────────── (T-LitInt)
     //    Γ ⊢ n : Int
-    fn infer_lit_int(
-        env: &Env,
-        expr: &Expr,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    fn infer_lit_int(env: &Env, expr: &Expr) -> Result<(Subst, Type, InferenceTree)> {
         let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
         let tree = InferenceTree::new("T-Int", &input, "Int", vec![]);
         Ok((HashMap::new(), Type::Int, tree))
@@ -336,10 +325,7 @@ impl TypeInference {
 
     // ────────────────── (T-LitBool)
     //    Γ ⊢ b : Bool
-    fn infer_lit_bool(
-        env: &Env,
-        expr: &Expr,
-    ) -> Result<(Subst, Type, InferenceTree), InferenceError> {
+    fn infer_lit_bool(env: &Env, expr: &Expr) -> Result<(Subst, Type, InferenceTree)> {
         let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
         let tree = InferenceTree::new("T-Bool", &input, "Bool", vec![]);
         Ok((HashMap::new(), Type::Bool, tree))

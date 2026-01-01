@@ -16,3 +16,5 @@ pub enum InferenceError {
     #[error("Cannot unify tuples of different lengths: {left_len} vs {right_len}")]
     TupleLengthMismatch { left_len: usize, right_len: usize },
 }
+
+pub type Result<T> = std::result::Result<T, InferenceError>;
