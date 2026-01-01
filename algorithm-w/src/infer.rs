@@ -193,7 +193,7 @@ impl TypeInference {
             Expr::Abs(param, body) => self.infer_abs(env, expr, param, body),
             Expr::App(func, arg) => self.infer_app(env, expr, func, arg),
             Expr::Let(var, value, body) => self.infer_let(env, expr, var, value, body),
-            Expr::Tuple(exprs) => Self::infer_tuple(env, expr, exprs),
+            Expr::Tuple(exprs) => self.infer_tuple(env, expr, exprs),
         }
     }
 
@@ -311,8 +311,31 @@ impl TypeInference {
     // Γ ⊢ e₁ : τ₁    ...    Γ ⊢ eₙ : τₙ
     // ─────────────────────────────────── (T-Tuple)
     //    Γ ⊢ (e₁, ..., eₙ) : (τ₁, ..., τₙ)
-    fn infer_tuple(env: &Env, expr: &Expr, exprs: &[Expr]) -> Result<(Subst, Type, InferenceTree)> {
-        unimplemented!()
+    fn infer_tuple(
+        &mut self,
+        env: &Env,
+        expr: &Expr,
+        exprs: &[Expr],
+    ) -> Result<(Subst, Type, InferenceTree)> {
+        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+
+        let mut subst = HashMap::new();
+        let mut types = Vec::new();
+        let mut trees = Vec::new();
+        let mut current_env = env.clone();
+
+        for expr in exprs {
+            let (s, ty, tree) = self.infer(&current_env, expr)?;
+            subst = Self::compose_subst(&s, &subst);
+            current_env = Self::apply_subst_env(&s, &current_env);
+            types.push(ty);
+            trees.push(tree);
+        }
+
+        let result_type = Type::Tuple(types);
+        let output = format!("{}", result_type);
+        let tree = InferenceTree::new("T-Tuple", &input, &output, trees);
+        Ok((subst, result_type, tree))
     }
 
     // ───────────────── (T-LitInt)
