@@ -81,6 +81,14 @@
             statix.enable = true;
             deadnix.enable = true;
             actionlint.enable = true;
+            cargo-test = {
+              enable = true;
+              name = "cargo-test";
+              description = "Run cargo test";
+              entry = "${toolchain}/bin/cargo test";
+              pass_filenames = false;
+              stages = [ "pre-push" ];
+            };
           };
 
           devShells.default = pkgs.mkShell {
