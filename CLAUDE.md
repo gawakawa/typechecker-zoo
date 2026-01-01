@@ -21,6 +21,9 @@ nix fmt                     # Format (treefmt: nixfmt + rustfmt)
 nix fmt -- --ci             # Check formatting (CI mode)
 nix build                   # Full build via Nix
 nix flake check             # Flake checks
+
+# Run CLI
+nix run .#algorithm-w -- 'let id = \x -> x in id 42'
 ```
 
 ## Architecture
@@ -35,7 +38,9 @@ Implements Hindley-Milner type inference with unification.
 
 **Module structure:**
 - `ast.rs` - Core types: `Expr`, `Lit`, `Type`, `Scheme`
-- `infer.rs` - Type inference engine with unification
+- `infer.rs` - Type inference engine (`TypeInference` struct)
+- `unify.rs` - Unification algorithm (impl block for `TypeInference`)
+- `parser.lalrpop` - LALRPOP grammar for expressions and types
 - `error.rs` - Error types using `thiserror`
 
 **Key types:**
@@ -45,7 +50,12 @@ Implements Hindley-Milner type inference with unification.
 - `Subst` - Type substitution (`HashMap<TyVar, Type>`)
 - `Env` - Type environment (`BTreeMap<TmVar, Scheme>`)
 
+**Entry points:**
+- `infer_type_only(expr)` - Returns just the inferred `Type`
+- `run_inference(expr)` - Returns `InferenceTree` with derivation trace
+
 **Core algorithms in `TypeInference`:**
+- `infer(env, expr)` - Main inference with inference rules (T-Var, T-Abs, T-App, T-Let, etc.)
 - `unify(t1, t2)` - Robinson's unification with occurs check
-- `apply_subst` - Apply substitution to types/schemes/environments
-- `compose_subst` - Compose two substitutions (s1 after s2)
+- `instantiate(scheme)` - Replace quantified vars with fresh type vars
+- `generalize(env, ty)` - Quantify free type vars not in environment
