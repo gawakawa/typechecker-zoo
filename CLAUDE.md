@@ -8,22 +8,15 @@ Rust implementations of type systems from [Typechecker Zoo](https://sdiehl.githu
 
 ## Development Environment
 
-Uses Nix flakes. Enter dev shell with `nix develop` or use direnv (auto-activates via `.envrc`).
+Uses Nix flakes with direnv (auto-activates via `.envrc`).
 
 ## Commands
 
 ```bash
-cargo build                 # Build
-cargo test                  # Run all tests
-cargo test <test_name>      # Run single test
-cargo clippy                # Lint
+nix build                   # Build
+nix flake check             # Run tests and checks
 nix fmt                     # Format (treefmt: nixfmt + rustfmt)
-nix fmt -- --ci             # Check formatting (CI mode)
-nix build                   # Full build via Nix
-nix flake check             # Flake checks
-
-# Run CLI
-nix run '.#algorithm-w' -- 'let id = \x -> x in id 42'
+nix run '.#algorithm-w' -- 'let id = \x -> x in id 42' # Run CLI
 ```
 
 ## Architecture
