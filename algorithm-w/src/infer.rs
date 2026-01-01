@@ -155,7 +155,7 @@ impl TypeInference {
         expr: &Expr,
         name: &str,
     ) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
 
         match env.get(name) {
             Some(scheme) => {
@@ -180,7 +180,7 @@ impl TypeInference {
         param: &str,
         body: &Expr,
     ) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
 
         let param_type = Type::Var(self.fresh_tyvar());
         let mut new_env = env.clone();
@@ -209,7 +209,7 @@ impl TypeInference {
         func: &Expr,
         arg: &Expr,
     ) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
         let result_type = Type::Var(self.fresh_tyvar());
 
         let (s1, func_type, tree1) = self.infer(env, func)?;
@@ -240,7 +240,7 @@ impl TypeInference {
         value: &Expr,
         body: &Expr,
     ) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
 
         let (s1, value_type, tree1) = self.infer(env, value)?;
         let env_subst = Self::apply_subst_env(&s1, env);
@@ -266,7 +266,7 @@ impl TypeInference {
         expr: &Expr,
         exprs: &[Expr],
     ) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
 
         let mut subst = HashMap::new();
         let mut types = Vec::new();
@@ -290,7 +290,7 @@ impl TypeInference {
     // ───────────────── (T-LitInt)
     //    Γ ⊢ n : Int
     fn infer_lit_int(env: &Env, expr: &Expr) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
         let tree = InferenceTree::new("T-Int", &input, "Int", vec![]);
         Ok((HashMap::new(), Type::Int, tree))
     }
@@ -298,7 +298,7 @@ impl TypeInference {
     // ────────────────── (T-LitBool)
     //    Γ ⊢ b : Bool
     fn infer_lit_bool(env: &Env, expr: &Expr) -> Result<(Subst, Type, InferenceTree)> {
-        let input = format!("{} ⊢ {} ⇒", Self::pretty_env(env), expr);
+        let input = format!("{} ⊢ {}", Self::pretty_env(env), expr);
         let tree = InferenceTree::new("T-Bool", &input, "Bool", vec![]);
         Ok((HashMap::new(), Type::Bool, tree))
     }
