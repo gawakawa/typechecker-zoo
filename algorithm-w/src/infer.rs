@@ -36,7 +36,17 @@ pub struct TypeInference {
     counter: usize,
 }
 
+impl Default for TypeInference {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TypeInference {
+    pub fn new() -> Self {
+        Self { counter: 0 }
+    }
+
     fn fresh_tyvar(&mut self) -> TyVar {
         let var = format!("t{}", self.counter);
         self.counter += 1;
@@ -331,6 +341,13 @@ impl TypeInference {
         }
         set
     }
+}
+
+pub fn infer_type_only(expr: &Expr) -> Result<Type> {
+    let mut inference = TypeInference::new();
+    let env = BTreeMap::new();
+    let (_, ty, _) = inference.infer(&env, expr)?;
+    Ok(ty)
 }
 
 #[cfg(test)]
