@@ -7,5 +7,5 @@ Rust implementations of type systems from [Typechecker Zoo](https://sdiehl.githu
 ### Algorithm W
 
 ```bash
-nix run .#algorithm-w -- 'let const = \x -> \y -> x in const 42 true'
+nix run '.#algorithm-w' -- 'let const = \x -> \y -> x in const 42 true'
 ```

@@ -23,7 +23,7 @@ nix build                   # Full build via Nix
 nix flake check             # Flake checks
 
 # Run CLI
-nix run .#algorithm-w -- 'let id = \x -> x in id 42'
+nix run '.#algorithm-w' -- 'let id = \x -> x in id 42'
 ```
 
 ## Architecture
