@@ -35,13 +35,48 @@ pub enum Lit {
     Bool(bool),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Var(String),
     Arrow(Box<Type>, Box<Type>),
     Int,
     Bool,
     Tuple(Vec<Type>),
+}
+
+impl Type {
+    pub fn alpha_eq(&self, target: &Type) -> bool {
+        use std::collections::HashMap;
+        self.bijects_to(target, &mut HashMap::new(), &mut HashMap::new())
+    }
+
+    fn bijects_to(
+        &self,
+        target: &Type,
+        map: &mut std::collections::HashMap<String, String>,
+        inv: &mut std::collections::HashMap<String, String>,
+    ) -> bool {
+        match (self, target) {
+            (Type::Var(a), Type::Var(b)) => match (map.get(a), inv.get(b)) {
+                (None, None) => {
+                    map.insert(a.clone(), b.clone());
+                    inv.insert(b.clone(), a.clone());
+                    true
+                }
+                (Some(map_a), Some(inv_b)) => map_a == b && inv_b == a,
+                _ => false,
+            },
+            (Type::Arrow(a1, a2), Type::Arrow(b1, b2)) => {
+                a1.bijects_to(b1, map, inv) && a2.bijects_to(b2, map, inv)
+            }
+            (Type::Tuple(ts1), Type::Tuple(ts2)) => {
+                ts1.len() == ts2.len()
+                    && ts1.iter().zip(ts2).all(|(a, b)| a.bijects_to(b, map, inv))
+            }
+            (Type::Int, Type::Int) | (Type::Bool, Type::Bool) => true,
+            _ => false,
+        }
+    }
 }
 
 impl std::fmt::Display for Type {
