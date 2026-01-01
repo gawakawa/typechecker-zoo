@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    fmt,
+};
 
 use crate::{
     ast::{Expr, Lit, Scheme, Type},
@@ -29,6 +32,27 @@ impl InferenceTree {
             output: output.to_string(),
             children,
         }
+    }
+}
+
+impl fmt::Display for InferenceTree {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.display_with_indent(f, 0)
+    }
+}
+
+impl InferenceTree {
+    fn display_with_indent(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        let prefix = "  ".repeat(indent);
+        writeln!(
+            f,
+            "{}{}: {} => {}",
+            prefix, self.rules, self.input, self.output
+        )?;
+        for child in &self.children {
+            child.display_with_indent(f, indent + 1)?;
+        }
+        Ok(())
     }
 }
 
@@ -348,6 +372,13 @@ pub fn infer_type_only(expr: &Expr) -> Result<Type> {
     let env = BTreeMap::new();
     let (_, ty, _) = inference.infer(&env, expr)?;
     Ok(ty)
+}
+
+pub fn run_inference(expr: &Expr) -> Result<InferenceTree> {
+    let mut inference = TypeInference::new();
+    let env = BTreeMap::new();
+    let (_, _, tree) = inference.infer(&env, expr)?;
+    Ok(tree)
 }
 
 #[cfg(test)]
