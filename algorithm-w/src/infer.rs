@@ -740,4 +740,32 @@ mod tests {
             assert_eq!(actual, expected);
         }
     }
+
+    mod instantiate {
+        use super::*;
+
+        #[test]
+        fn monomorphic_type() {
+            // instantiate(Int) = Int
+            let mut ti = TypeInference { counter: 0 };
+            let scheme = Scheme {
+                vars: vec![],
+                ty: Type::Int,
+            };
+            let actual = ti.instantiate(&scheme);
+            assert_eq!(actual, Type::Int);
+        }
+
+        #[test]
+        fn multiple_tyvars_get_distinct_fresh_vars() {
+            // instantiate(∀a b. (a, b, a)) = (t0, t1, t0)
+            let mut ti = TypeInference { counter: 0 };
+            let scheme = Scheme {
+                vars: vec!["a".to_string(), "b".to_string()],
+                ty: tuple(vec![tyvar("a"), tyvar("b"), tyvar("a")]),
+            };
+            let actual = ti.instantiate(&scheme);
+            assert_eq!(actual, tuple(vec![tyvar("t0"), tyvar("t1"), tyvar("t0")]));
+        }
+    }
 }
