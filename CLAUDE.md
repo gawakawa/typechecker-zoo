@@ -19,6 +19,11 @@ nix fmt                     # Format (treefmt: nixfmt + rustfmt)
 nix run '.#algorithm-w' -- 'let id = \x -> x in id 42' # Run CLI
 ```
 
+Run a specific test:
+```bash
+cargo test -p algorithm-w test_name
+```
+
 ## Architecture
 
 Cargo workspace with each type system as a separate crate:
@@ -31,8 +36,9 @@ Implements Hindley-Milner type inference with unification.
 
 **Module structure:**
 - `ast.rs` - Core types: `Expr`, `Lit`, `Type`, `Scheme`
-- `infer.rs` - Type inference engine (`TypeInference` struct)
-- `unify.rs` - Unification algorithm (impl block for `TypeInference`)
+- `infer.rs` - Type inference engine (`TypeInference` struct), includes `polymorphism.rs` and `unify.rs` as submodules
+- `polymorphism.rs` - `instantiate` and `generalize` operations
+- `unify.rs` - Robinson's unification algorithm with occurs check
 - `parser.lalrpop` - LALRPOP grammar for expressions and types
 - `error.rs` - Error types using `thiserror`
 
@@ -52,3 +58,7 @@ Implements Hindley-Milner type inference with unification.
 - `unify(t1, t2)` - Robinson's unification with occurs check
 - `instantiate(scheme)` - Replace quantified vars with fresh type vars
 - `generalize(env, ty)` - Quantify free type vars not in environment
+
+**Testing:**
+- Unit tests in each module (`unify.rs`, `polymorphism.rs`)
+- Integration tests in `tests/integration_tests.rs` using `assert_types_equal` for alpha-equivalence
