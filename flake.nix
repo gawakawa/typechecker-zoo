@@ -73,8 +73,20 @@
                 "algorithm-w"
               ];
               meta = {
-                description = "Hindley-Milner type inference (Algorithm W)";
-                license = pkgs.lib.licenses.mit;
+                description = "Algorithm W";
+              };
+            };
+            system-f = rustPlatform.buildRustPackage {
+              pname = "system-f";
+              version = "0.1.0";
+              src = ./.;
+              cargoLock.lockFile = ./Cargo.lock;
+              cargoBuildFlags = [
+                "-p"
+                "system-f"
+              ];
+              meta = {
+                description = "System F";
               };
             };
             default = self'.packages.algorithm-w;
