@@ -38,3 +38,19 @@ pub enum Type {
     Int,                         // Int
     Bool,                        // Bool
 }
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Var(name) => write!(f, "{}", name),
+            Type::ETVar(name) => write!(f, "^{}", name),
+            Type::Int => write!(f, "Int"),
+            Type::Bool => write!(f, "Bool"),
+            Type::Arrow(t1, t2) => match t1.as_ref() {
+                Type::Arrow(_, _) => write!(f, "({}) -> {}", t1, t2),
+                _ => write!(f, "{} -> {}", t1, t2),
+            },
+            Type::Forall(var, ty) => write!(f, "∀{}. {}", var, ty),
+        }
+    }
+}
