@@ -3,7 +3,6 @@ _: {
     {
       config,
       pkgs,
-      self',
       ...
     }:
     {
@@ -15,8 +14,6 @@ _: {
 
         shellHook = ''
           ${config.pre-commit.shellHook}
-          cat ${self'.packages.mcp-config} > .mcp.json
-          echo "Generated .mcp.json"
         '';
       };
     };

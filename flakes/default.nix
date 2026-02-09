@@ -6,6 +6,5 @@ _: {
     ./devShells.nix
     ./pre-commit.nix
     ./treefmt.nix
-    ./mcp.nix
   ];
 }
