@@ -7,13 +7,12 @@ _: {
         statix.enable = true;
         deadnix.enable = true;
         actionlint.enable = true;
-        cargo-test = {
+        workflow-timeout = {
           enable = true;
-          name = "cargo-test";
-          description = "Run cargo test";
-          entry = "${pkgs.rustToolchain}/bin/cargo test";
-          pass_filenames = false;
-          stages = [ "pre-push" ];
+          name = "Check workflow timeout-minutes";
+          package = pkgs.check-jsonschema;
+          entry = "${pkgs.check-jsonschema}/bin/check-jsonschema --builtin-schema github-workflows-require-timeout";
+          files = "\\.github/workflows/.*\\.ya?ml$";
         };
       };
     };
