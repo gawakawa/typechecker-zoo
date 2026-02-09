@@ -8,10 +8,10 @@ fn infer(input: &str) -> Result<String, InferenceError> {
 fn assert_types_equal(actual: &str, expected: &str) {
     let actual_ty = parser::TypeParser::new()
         .parse(actual)
-        .expect(&format!("failed to parse actual type: {}", actual));
+        .unwrap_or_else(|_| panic!("failed to parse actual type: {}", actual));
     let expected_ty = parser::TypeParser::new()
         .parse(expected)
-        .expect(&format!("failed to parse expected type: {}", expected));
+        .unwrap_or_else(|_| panic!("failed to parse expected type: {}", expected));
 
     assert!(
         actual_ty.alpha_eq(&expected_ty),

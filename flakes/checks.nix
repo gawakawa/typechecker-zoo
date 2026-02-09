@@ -19,7 +19,7 @@
           commonArgs
           // {
             inherit cargoArtifacts;
-            cargoClippyExtraArgs = "--all-targets";
+            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
           }
         );
 
@@ -27,7 +27,7 @@
           commonArgs
           // {
             inherit cargoArtifacts;
-            env.RUSTDOCFLAGS = "";
+            env.RUSTDOCFLAGS = "--deny warnings";
           }
         );
 

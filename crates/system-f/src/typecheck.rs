@@ -58,12 +58,12 @@ pub struct InferenceTree {
 
 #[derive(Default)]
 pub struct BiDirectional {
-    counter: usize,
+    _counter: usize,
 }
 
 impl BiDirectional {
     pub fn infer(ctx: &Context, expr: &Expr) -> TypeResult<(Type, Context, InferenceTree)> {
-        let input = format!("{} ⊢ {:?}", ctx, expr);
+        let _input = format!("{} ⊢ {:?}", ctx, expr);
 
         match expr {
             Expr::Var(_) => unimplemented!(),
@@ -79,14 +79,14 @@ impl BiDirectional {
             Expr::BinOp(_, _, _) => unimplemented!(),
         }
     }
-    fn subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
+    fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
         match ty {
             Type::Var(name) if name == var => replacement.clone(),
             Type::ETVar(name) if name == var => replacement.clone(),
             Type::Var(_) | Type::ETVar(_) | Type::Int | Type::Bool => ty.clone(),
             Type::Arrow(t1, t2) => Type::Arrow(
-                Box::new(Self::subst_type(var, replacement, t1)),
-                Box::new(Self::subst_type(var, replacement, t2)),
+                Box::new(Self::_subst_type(var, replacement, t1)),
+                Box::new(Self::_subst_type(var, replacement, t2)),
             ),
             Type::Forall(bound_var, body) => {
                 if bound_var == var {
@@ -94,7 +94,7 @@ impl BiDirectional {
                 } else {
                     Type::Forall(
                         bound_var.clone(),
-                        Box::new(Self::subst_type(var, replacement, body)),
+                        Box::new(Self::_subst_type(var, replacement, body)),
                     )
                 }
             }
