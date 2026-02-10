@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     ast::{Expr, Type},
-    errors::TypeResult,
+    errors::{TypeError, TypeResult},
 };
 
 pub type TmVar = String;
@@ -56,6 +56,17 @@ pub struct InferenceTree {
     pub children: Vec<InferenceTree>,
 }
 
+impl InferenceTree {
+    fn new(rule: &str, input: &str, output: &str, children: Vec<InferenceTree>) -> Self {
+        Self {
+            rule: rule.to_string(),
+            input: input.to_string(),
+            output: output.to_string(),
+            children,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct BiDirectional {
     _counter: usize,
@@ -63,10 +74,10 @@ pub struct BiDirectional {
 
 impl BiDirectional {
     pub fn infer(ctx: &Context, expr: &Expr) -> TypeResult<(Type, Context, InferenceTree)> {
-        let _input = format!("{} ⊢ {:?}", ctx, expr);
+        let input = format!("{} ⊢ {:?}", ctx, expr);
 
         match expr {
-            Expr::Var(_) => unimplemented!(),
+            Expr::Var(x) => Self::infer_var(ctx, x, &input),
             Expr::Ann(_, _) => unimplemented!(),
             Expr::LitInt(_) => unimplemented!(),
             Expr::LitBool(_) => unimplemented!(),
@@ -79,6 +90,32 @@ impl BiDirectional {
             Expr::BinOp(_, _, _) => unimplemented!(),
         }
     }
+
+    ///    x : A ∈ Γ
+    /// ---------------- (T-Var)
+    /// Γ, x : A ⊢ x ⇒ A
+    fn infer_var(
+        ctx: &Context,
+        x: &str,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        if let Some(Entry::VarBnd(_, ty)) =
+            ctx.find(|entry| matches!(entry, Entry::VarBnd(name, _) if name == x))
+        {
+            let output = format!("{} ⇒ {} ⊣ {}", input, ty, ctx);
+            Ok((
+                ty.clone(),
+                ctx.clone(),
+                InferenceTree::new("InfVar", input, &output, vec![]),
+            ))
+        } else {
+            Err(TypeError::UnboundVariable {
+                name: x.to_string(),
+                expr: None,
+            })
+        }
+    }
+
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
         match ty {
             Type::Var(name) if name == var => replacement.clone(),
