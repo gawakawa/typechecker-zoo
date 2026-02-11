@@ -33,11 +33,29 @@ impl fmt::Display for Entry {
 pub struct Context(Vec<Entry>);
 
 impl Context {
+    pub fn push(&mut self, entry: Entry) {
+        self.0.push(entry);
+    }
+
     pub fn find<F>(&self, predicate: F) -> Option<&Entry>
     where
         F: Fn(&Entry) -> bool,
     {
         self.0.iter().find(|entry| predicate(entry))
+    }
+
+    pub fn break3<F>(&self, predicate: F) -> (Vec<Entry>, Option<Entry>, Vec<Entry>)
+    where
+        F: Fn(&Entry) -> bool,
+    {
+        if let Some(pos) = self.0.iter().position(predicate) {
+            let left = self.0[..pos].to_vec();
+            let middle = self.0[pos].clone();
+            let right = self.0[pos + 1..].to_vec();
+            (left, Some(middle), right)
+        } else {
+            (self.0.clone(), None, Vec::new())
+        }
     }
 }
 
@@ -69,11 +87,25 @@ impl InferenceTree {
 
 #[derive(Default)]
 pub struct BiDirectional {
-    _counter: usize,
+    counter: usize,
 }
 
 impl BiDirectional {
-    pub fn infer(ctx: &Context, expr: &Expr) -> TypeResult<(Type, Context, InferenceTree)> {
+    pub fn new() -> Self {
+        Self { counter: 0 }
+    }
+
+    pub fn fresh_tyvar(&mut self) -> TyVar {
+        let var = format!("α{}", self.counter);
+        self.counter += 1;
+        var
+    }
+
+    pub fn infer(
+        &mut self,
+        ctx: &Context,
+        expr: &Expr,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
         let input = format!("{} ⊢ {:?}", ctx, expr);
 
         match expr {
@@ -81,7 +113,7 @@ impl BiDirectional {
             Expr::Ann(_, _) => unimplemented!(),
             Expr::LitInt(n) => Self::infer_lit_int(ctx, *n, &input),
             Expr::LitBool(b) => Self::infer_lit_bool(ctx, *b, &input),
-            Expr::Abs(_, _, _) => unimplemented!(),
+            Expr::Abs(x, param_ty, body) => self.infer_abs(ctx, x, param_ty, body, &input),
             Expr::App(_, _) => unimplemented!(),
             Expr::TAbs(_, _) => unimplemented!(),
             Expr::TApp(_, _) => unimplemented!(),
@@ -146,6 +178,40 @@ impl BiDirectional {
         ))
     }
 
+    /// Γ, x:A ⊢ e ⇐ B
+    /// ------------------ (T-Abs)
+    /// Γ ⊢ λx:A.e ⇒ A → B
+    fn infer_abs(
+        &mut self,
+        ctx: &Context,
+        x: &str,
+        param_ty: &Type,
+        body: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let b = self.fresh_tyvar();
+        let mut new_ctx = ctx.clone();
+        new_ctx.push(Entry::VarBnd(x.to_string(), param_ty.clone()));
+        new_ctx.push(Entry::ETVarBnd(b.clone()));
+
+        let (ctx1, tree) = self.check(&new_ctx, body, &Type::ETVar(b.clone()))?;
+        let (left, _, right) =
+            ctx1.break3(|entry| matches!(entry, Entry::VarBnd(name, _) if name == x));
+        let mut final_ctx_entries = left
+            .into_iter()
+            .filter(|entry| matches!(entry, Entry::SETVarBnd(_, _)))
+            .collect::<Vec<_>>();
+        final_ctx_entries.extend(right);
+        let final_ctx = Context(final_ctx_entries);
+        let result_ty = Type::Arrow(Box::new(param_ty.clone()), Box::new(Type::ETVar(b)));
+        let output = format!("{} ⇒ {} ⊣ {}", input, result_ty, final_ctx);
+        Ok((
+            result_ty,
+            final_ctx,
+            InferenceTree::new("InfLam", input, &output, vec![tree]),
+        ))
+    }
+
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
         match ty {
             Type::Var(name) if name == var => replacement.clone(),
@@ -166,6 +232,15 @@ impl BiDirectional {
                 }
             }
         }
+    }
+
+    fn check(
+        &mut self,
+        _ctx: &Context,
+        _expr: &Expr,
+        _ty: &Type,
+    ) -> TypeResult<(Context, InferenceTree)> {
+        unimplemented!()
     }
 
     pub fn apply_ctx_type(ctx: &Context, ty: &Type) -> Type {
