@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, vec};
 
 use crate::{
     ast::{Expr, Type},
@@ -117,7 +117,7 @@ impl BiDirectional {
             Expr::App(func, arg) => self.infer_application(ctx, func, arg, &input),
             Expr::TAbs(_, _) => unimplemented!(),
             Expr::TApp(_, _) => unimplemented!(),
-            Expr::Let(_, _, _) => unimplemented!(),
+            Expr::Let(x, e1, e2) => self.infer_let(ctx, x, e1, e2, &input),
             Expr::IfThenElse(_, _, _) => unimplemented!(),
             Expr::BinOp(_, _, _) => unimplemented!(),
         }
@@ -304,6 +304,37 @@ impl BiDirectional {
             Type::ETVar(a2),
             ctx2,
             InferenceTree::new("InfAppETVar", input, &output, vec![tree]),
+        ))
+    }
+
+    /// Γ ⊢ e₁ ⇒ A  Γ, x:A ⊢ e₂ ⇒ B
+    /// --------------------------- (T-Let)
+    /// Γ ⊢ let x = e₁ in e₂ ⇒ B
+    fn infer_let(
+        &mut self,
+        ctx: &Context,
+        x: &str,
+        e1: &Expr,
+        e2: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let (ty1, ctx1, tree1) = self.infer(ctx, e1)?;
+        let mut new_ctx = ctx1.clone();
+        new_ctx.push(Entry::VarBnd(x.to_string(), ty1));
+        let (ty2, ctx2, tree2) = self.infer(&new_ctx, e2)?;
+        let (left, _, right) =
+            ctx2.break3(|entry| matches!(entry, Entry::VarBnd(name, _) if name == x));
+        let mut final_ctx_entries = left
+            .into_iter()
+            .filter(|entry| matches!(entry, Entry::SETVarBnd(_, _)))
+            .collect::<Vec<_>>();
+        final_ctx_entries.extend(right);
+        let final_ctx = Context(final_ctx_entries);
+        let output = format!("{} ⇒ {} ⊣ {}", input, ty2, final_ctx);
+        Ok((
+            ty2,
+            final_ctx,
+            InferenceTree::new("InfLet", input, &output, vec![tree1, tree2]),
         ))
     }
 
