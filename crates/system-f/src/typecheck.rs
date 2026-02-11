@@ -79,8 +79,8 @@ impl BiDirectional {
         match expr {
             Expr::Var(x) => Self::infer_var(ctx, x, &input),
             Expr::Ann(_, _) => unimplemented!(),
-            Expr::LitInt(_) => unimplemented!(),
-            Expr::LitBool(_) => unimplemented!(),
+            Expr::LitInt(n) => Self::infer_lit_int(ctx, *n, &input),
+            Expr::LitBool(b) => Self::infer_lit_bool(ctx, *b, &input),
             Expr::Abs(_, _, _) => unimplemented!(),
             Expr::App(_, _) => unimplemented!(),
             Expr::TAbs(_, _) => unimplemented!(),
@@ -114,6 +114,36 @@ impl BiDirectional {
                 expr: None,
             })
         }
+    }
+
+    /// ----------- (T-LitInt)
+    /// Γ ⊢ n ⇒ Int
+    fn infer_lit_int(
+        ctx: &Context,
+        _n: i64,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let output = format!("{} ⇒ Int ⊣ {}", input, ctx);
+        Ok((
+            Type::Int,
+            ctx.clone(),
+            InferenceTree::new("InfLitInt", input, &output, vec![]),
+        ))
+    }
+
+    /// ------------ (T-LitBool)
+    /// Γ ⊢ b ⇒ Bool
+    fn infer_lit_bool(
+        ctx: &Context,
+        _b: bool,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let output = format!("{} ⇒ Bool ⊣ {}", input, ctx);
+        Ok((
+            Type::Bool,
+            ctx.clone(),
+            InferenceTree::new("InfLitBool", input, &output, vec![]),
+        ))
     }
 
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
