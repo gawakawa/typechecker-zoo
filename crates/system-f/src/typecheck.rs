@@ -114,7 +114,7 @@ impl BiDirectional {
             Expr::LitInt(n) => Self::infer_lit_int(ctx, *n, &input),
             Expr::LitBool(b) => Self::infer_lit_bool(ctx, *b, &input),
             Expr::Abs(x, param_ty, body) => self.infer_abs(ctx, x, param_ty, body, &input),
-            Expr::App(_, _) => unimplemented!(),
+            Expr::App(func, arg) => self.infer_application(ctx, func, arg, &input),
             Expr::TAbs(_, _) => unimplemented!(),
             Expr::TApp(_, _) => unimplemented!(),
             Expr::Let(_, _, _) => unimplemented!(),
@@ -210,6 +210,36 @@ impl BiDirectional {
             final_ctx,
             InferenceTree::new("InfLam", input, &output, vec![tree]),
         ))
+    }
+
+    /// Γ ⊢ e₁ ⇒ A → B  Γ ⊢ e₂ ⇐ A
+    /// -------------------------- (T_App)
+    ///       Γ ⊢ e₁;e₂ ⇒ B
+    fn infer_application(
+        &mut self,
+        ctx: &Context,
+        func: &Expr,
+        arg: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let (func_ty, ctx1, tree1) = self.infer(ctx, func)?;
+        let func_ty_applied = Self::apply_ctx_type(&ctx1, &func_ty);
+        let (result_ty, ctx2, tree2) = self.infer_app(&ctx1, &func_ty_applied, arg)?;
+        let output = format!("{} ⇒ {} ⊣ {}", input, result_ty, ctx2);
+        Ok((
+            result_ty,
+            ctx2,
+            InferenceTree::new("InfApp", input, &output, vec![tree1, tree2]),
+        ))
+    }
+
+    fn infer_app(
+        &mut self,
+        _ctx: &Context,
+        _func_ty: &Type,
+        _arg: &Expr,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        unimplemented!();
     }
 
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
