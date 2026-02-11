@@ -235,11 +235,76 @@ impl BiDirectional {
 
     fn infer_app(
         &mut self,
-        _ctx: &Context,
-        _func_ty: &Type,
-        _arg: &Expr,
+        ctx: &Context,
+        func_ty: &Type,
+        arg: &Expr,
     ) -> TypeResult<(Type, Context, InferenceTree)> {
-        unimplemented!();
+        let input = format!("{} ⊢ {:?} • {}", ctx, arg, func_ty);
+
+        match func_ty {
+            Type::Arrow(param_ty, result_ty) => {
+                self.infer_app_arrow(ctx, param_ty, result_ty, arg, &input)
+            }
+            Type::ETVar(a) => self.infer_app_etvar(ctx, a, arg, &input),
+            _ => Err(TypeError::ApplicationTypeError {
+                actual: func_ty.clone(),
+                expr: None,
+            }),
+        }
+    }
+
+    ///     Γ ⊢ e₂ ⇐ A
+    /// ------------------ (T-AppArrow)
+    /// Γ ⊢ A → B • e₂ ⇒ B
+    fn infer_app_arrow(
+        &mut self,
+        ctx: &Context,
+        param_ty: &Type,
+        result_ty: &Type,
+        arg: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let (ctx1, tree) = self.check(ctx, arg, param_ty)?;
+        let output = format!("{} ⇒⇒ {} ⊣ {}", input, result_ty, ctx1);
+        Ok((
+            result_ty.clone(),
+            ctx1,
+            InferenceTree::new("InfAppArr", input, &output, vec![tree]),
+        ))
+    }
+
+    /// Γ[^α := ^α₁ → ^α₂], ^α₁, ^α₂ ⊢ e₂ ⇐ ^α₁
+    /// --------------------------------------- (T-AppEVar)
+    ///            Γ ⊢ ^α • e₂ ⇒ ^α₂
+    fn infer_app_etvar(
+        &mut self,
+        ctx: &Context,
+        a: &TyVar,
+        arg: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let a1 = self.fresh_tyvar();
+        let a2 = self.fresh_tyvar();
+        let (left, _, right) =
+            ctx.break3(|entry| matches!(entry, Entry::ETVarBnd(name) if name == a));
+        let arrow_type = Type::Arrow(
+            Box::new(Type::ETVar(a1.clone())),
+            Box::new(Type::ETVar(a2.clone())),
+        );
+        let mut new_ctx = left;
+        new_ctx.push(Entry::SETVarBnd(a.clone(), arrow_type));
+        new_ctx.push(Entry::ETVarBnd(a1.clone()));
+        new_ctx.push(Entry::ETVarBnd(a2.clone()));
+        new_ctx.extend(right);
+        let ctx1 = Context(new_ctx);
+
+        let (ctx2, tree) = self.check(&ctx1, arg, &Type::ETVar(a1))?;
+        let output = format!("{} ⇒⇒ ^{} ⊣ {}", input, a2, ctx2);
+        Ok((
+            Type::ETVar(a2),
+            ctx2,
+            InferenceTree::new("InfAppETVar", input, &output, vec![tree]),
+        ))
     }
 
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
