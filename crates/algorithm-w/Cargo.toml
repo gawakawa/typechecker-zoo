@@ -7,7 +7,7 @@ license.workspace = true
 [dependencies]
 clap = { version = "4.5.58", features = ["derive"] }
 itertools = "0.14.0"
-lalrpop-util = { version = "0.22.2", features = ["lexer", "unicode"] }
+lalrpop-util = { version = "0.23.0", features = ["lexer", "unicode"] }
 thiserror = "2.0.18"
 
 [build-dependencies]
