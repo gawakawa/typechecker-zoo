@@ -11,4 +11,4 @@ lalrpop-util = { version = "0.23.0", features = ["lexer", "unicode"] }
 thiserror = "2.0.18"
 
 [build-dependencies]
-lalrpop = "0.22.2"
+lalrpop = "0.23.0"
