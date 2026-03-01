@@ -123,7 +123,7 @@ impl BiDirectional {
         }
     }
 
-    ///    x : A ∈ Γ
+    /// x : A ∈ Γ
     /// ---------------- (T-Var)
     /// Γ, x : A ⊢ x ⇒ A
     fn infer_var(
@@ -214,7 +214,7 @@ impl BiDirectional {
 
     /// Γ ⊢ e₁ ⇒ A → B  Γ ⊢ e₂ ⇐ A
     /// -------------------------- (T_App)
-    ///       Γ ⊢ e₁;e₂ ⇒ B
+    /// Γ ⊢ e₁;e₂ ⇒ B
     fn infer_application(
         &mut self,
         ctx: &Context,
@@ -253,7 +253,7 @@ impl BiDirectional {
         }
     }
 
-    ///     Γ ⊢ e₂ ⇐ A
+    /// Γ ⊢ e₂ ⇐ A
     /// ------------------ (T-AppArrow)
     /// Γ ⊢ A → B • e₂ ⇒ B
     fn infer_app_arrow(
@@ -275,7 +275,7 @@ impl BiDirectional {
 
     /// Γ[^α := ^α₁ → ^α₂], ^α₁, ^α₂ ⊢ e₂ ⇐ ^α₁
     /// --------------------------------------- (T-AppEVar)
-    ///            Γ ⊢ ^α • e₂ ⇒ ^α₂
+    /// Γ ⊢ ^α • e₂ ⇒ ^α₂
     fn infer_app_etvar(
         &mut self,
         ctx: &Context,
