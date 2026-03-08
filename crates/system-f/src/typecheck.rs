@@ -1,4 +1,4 @@
-use std::{fmt, vec};
+use std::{collections::HashSet, fmt, vec};
 
 use crate::{
     ast::{Expr, Type},
@@ -101,6 +101,27 @@ impl BiDirectional {
         var
     }
 
+    fn free_vars(&self, ty: &Type) -> HashSet<TyVar> {
+        match ty {
+            Type::Var(name) | Type::ETVar(name) => {
+                let mut set = HashSet::new();
+                set.insert(name.clone());
+                set
+            }
+            Type::Arrow(t1, t2) => {
+                let mut set = self.free_vars(t1);
+                set.extend(self.free_vars(t2));
+                set
+            }
+            Type::Forall(var, ty) => {
+                let mut set = self.free_vars(ty);
+                set.remove(var);
+                set
+            }
+            Type::Int | Type::Bool => HashSet::new(),
+        }
+    }
+
     pub fn infer(
         &mut self,
         ctx: &Context,
@@ -118,7 +139,7 @@ impl BiDirectional {
             Expr::TAbs(_, _) => unimplemented!(),
             Expr::TApp(_, _) => unimplemented!(),
             Expr::Let(x, e1, e2) => self.infer_let(ctx, x, e1, e2, &input),
-            Expr::IfThenElse(_, _, _) => unimplemented!(),
+            Expr::IfThenElse(e1, e2, e3) => self.infer_if(ctx, e1, e2, e3, &input),
             Expr::BinOp(_, _, _) => unimplemented!(),
         }
     }
@@ -338,6 +359,35 @@ impl BiDirectional {
         ))
     }
 
+    /// Γ ⊢ e₁ ⇐ Bool Γ ⊢ e₂ ⇒ A Γ ⊢ e₃ ⇒ A
+    /// ----------------------------------- (T-IF)
+    /// Γ ⊢ if e₁ then e₂ else e₃ ⇒ A
+    fn infer_if(
+        &mut self,
+        ctx: &Context,
+        e1: &Expr,
+        e2: &Expr,
+        e3: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let (ctx1, tree1) = self.check(ctx, e1, &Type::Bool)?;
+        let (ty2, ctx2, tree2) = self.infer(&ctx1, e2)?;
+        let (ty3, ctx3, tree3) = self.infer(&ctx2, e3)?;
+
+        let (unified_ctx, tree_unify) = self.subtype(&ctx3, &ty2, &ty3)?;
+        let output = format!("{} ⇒ {} ⊣ {}", input, ty2, unified_ctx);
+        Ok((
+            ty2,
+            unified_ctx,
+            InferenceTree::new(
+                "InfIf",
+                input,
+                &output,
+                vec![tree1, tree2, tree3, tree_unify],
+            ),
+        ))
+    }
+
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
         match ty {
             Type::Var(name) if name == var => replacement.clone(),
@@ -404,6 +454,27 @@ impl BiDirectional {
                 Type::Forall(var.clone(), Box::new(Self::apply_ctx_type_once(ctx, body)))
             }
             _ => ty.clone(),
+        }
+    }
+
+    fn subtype(
+        &mut self,
+        ctx: &Context,
+        t1: &Type,
+        t2: &Type,
+    ) -> TypeResult<(Context, InferenceTree)> {
+        let _input = format!("{} ⊢ {} <: {}", ctx, t1, t2);
+
+        match (t1, t2) {
+            (Type::Int, Type::Int) | (Type::Bool, Type::Bool) => unimplemented!(),
+            (Type::Var(a), Type::Var(b)) if a == b => unimplemented!(),
+            (Type::ETVar(a), Type::ETVar(b)) if a == b => unimplemented!(),
+            (Type::Arrow(_a1, _a2), Type::Arrow(_b1, _b2)) => unimplemented!(),
+            (_, Type::Forall(_b, _t2_body)) => unimplemented!(),
+            (Type::Forall(_a, _t1_body), _) => unimplemented!(),
+            (Type::ETVar(a), _) if !self.free_vars(t2).contains(a) => unimplemented!(),
+            (_, Type::ETVar(a)) if !self.free_vars(t1).contains(a) => unimplemented!(),
+            _ => unimplemented!(),
         }
     }
 }
