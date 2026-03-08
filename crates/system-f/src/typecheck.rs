@@ -131,7 +131,7 @@ impl BiDirectional {
 
         match expr {
             Expr::Var(x) => Self::infer_var(ctx, x, &input),
-            Expr::Ann(_, _) => unimplemented!(),
+            Expr::Ann(expr, ty) => self.infer_ann(ctx, expr, ty, &input),
             Expr::LitInt(n) => Self::infer_lit_int(ctx, *n, &input),
             Expr::LitBool(b) => Self::infer_lit_bool(ctx, *b, &input),
             Expr::Abs(x, param_ty, body) => self.infer_abs(ctx, x, param_ty, body, &input),
@@ -459,6 +459,25 @@ impl BiDirectional {
                 ))
             }
         }
+    }
+
+    /// Γ ⊢ e ⇐ A
+    /// --------------- (T-Instr)
+    /// Γ ⊢ (e : A) ⇒ A
+    fn infer_ann(
+        &mut self,
+        ctx: &Context,
+        expr: &Expr,
+        ty: &Type,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let (ctx1, tree) = self.check(ctx, expr, ty)?;
+        let output = format!("{} ⇒ {} ⊣ {}", input, ty, ctx1);
+        Ok((
+            ty.clone(),
+            ctx1,
+            InferenceTree::new("InfAnn", input, &output, vec![tree]),
+        ))
     }
 
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
