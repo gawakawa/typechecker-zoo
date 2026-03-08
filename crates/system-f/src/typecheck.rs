@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt, vec};
 
 use crate::{
-    ast::{Expr, Type},
+    ast::{BinOp, Expr, Type},
     errors::{TypeError, TypeResult},
 };
 
@@ -140,7 +140,7 @@ impl BiDirectional {
             Expr::TApp(_, _) => unimplemented!(),
             Expr::Let(x, e1, e2) => self.infer_let(ctx, x, e1, e2, &input),
             Expr::IfThenElse(e1, e2, e3) => self.infer_if(ctx, e1, e2, e3, &input),
-            Expr::BinOp(_, _, _) => unimplemented!(),
+            Expr::BinOp(op, e1, e2) => self.infer_binop(ctx, op, e1, e2, &input),
         }
     }
 
@@ -386,6 +386,79 @@ impl BiDirectional {
                 vec![tree1, tree2, tree3, tree_unify],
             ),
         ))
+    }
+
+    /// Γ ⊢ e₁ ⇐ Int  Γ ⊢ e₂ ⇐ Int
+    /// -------------------------- (T-Arith)
+    /// Γ ⊢ e₁ ⊕ e₂ ⇒ Int
+    ///
+    /// Γ ⊢ e₁ ⇐ Bool  Γ ⊢ e₂ ⇐ Bool
+    /// ---------------------------- (T-Bool)
+    /// Γ ⊢ e₁ ∧ e₂ ⇒ Bool
+    ///
+    /// Γ ⊢ e₁ ⇐ Int  Γ ⊢ e₂ ⇐ Int
+    /// -------------------------- (T-Cmp)
+    /// Γ ⊢ e₁ < e₂ ⇒ Bool
+    ///
+    /// Γ ⊢ e₁ ⇒ A  Γ ⊢ e₂ ⇐ A
+    /// ---------------------- (T-Eq)
+    /// Γ ⊢ e₁ = e₂ ⇒ Bool
+    fn infer_binop(
+        &mut self,
+        ctx: &Context,
+        op: &BinOp,
+        e1: &Expr,
+        e2: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        match op {
+            // T-Arith: Int → Int → Int
+            BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div => {
+                let (ctx1, tree1) = self.check(ctx, e1, &Type::Int)?;
+                let (ctx2, tree2) = self.check(&ctx1, e2, &Type::Int)?;
+                let output = format!("{} ⇒ {}", input, ctx2);
+                Ok((
+                    Type::Int,
+                    ctx2,
+                    InferenceTree::new("InfArith", input, &output, vec![tree1, tree2]),
+                ))
+            }
+
+            // T-Bool: Bool → Bool → Bool
+            BinOp::And | BinOp::Or => {
+                let (ctx1, tree1) = self.check(ctx, e1, &Type::Bool)?;
+                let (ctx2, tree2) = self.check(&ctx1, e2, &Type::Bool)?;
+                let output = format!("{} ⇒ {}", input, ctx2);
+                Ok((
+                    Type::Bool,
+                    ctx2,
+                    InferenceTree::new("InfBool", input, &output, vec![tree1, tree2]),
+                ))
+            }
+            // T-Cmp: Int → Int → Bool
+            BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
+                let (ctx1, tree1) = self.check(ctx, e1, &Type::Int)?;
+                let (ctx2, tree2) = self.check(&ctx1, e2, &Type::Int)?;
+                let output = format!("{} ⇒ {}", input, ctx2);
+                Ok((
+                    Type::Bool,
+                    ctx2,
+                    InferenceTree::new("InfCmp", input, &output, vec![tree1, tree2]),
+                ))
+            }
+
+            // T-Eq: ∀α. α → α → Bool
+            BinOp::Eq | BinOp::Ne => {
+                let (ty1, ctx1, tree1) = self.infer(ctx, e1)?;
+                let (ctx2, tree2) = self.check(&ctx1, e2, &ty1)?;
+                let output = format!("{} ⇒ Bool ⊣ {}", input, ctx2);
+                Ok((
+                    Type::Bool,
+                    ctx2,
+                    InferenceTree::new("InfEq", input, &output, vec![tree1, tree2]),
+                ))
+            }
+        }
     }
 
     fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
