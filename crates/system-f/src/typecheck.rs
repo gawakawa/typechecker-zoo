@@ -137,7 +137,7 @@ impl BiDirectional {
             Expr::Abs(x, param_ty, body) => self.infer_abs(ctx, x, param_ty, body, &input),
             Expr::App(func, arg) => self.infer_application(ctx, func, arg, &input),
             Expr::TAbs(a, body) => self.infer_tabs(ctx, a, body, &input),
-            Expr::TApp(_, _) => unimplemented!(),
+            Expr::TApp(func, ty_arg) => self.infer_tapp(ctx, func, ty_arg, &input),
             Expr::Let(x, e1, e2) => self.infer_let(ctx, x, e1, e2, &input),
             Expr::IfThenElse(e1, e2, e3) => self.infer_if(ctx, e1, e2, e3, &input),
             Expr::BinOp(op, e1, e2) => self.infer_binop(ctx, op, e1, e2, &input),
@@ -516,14 +516,42 @@ impl BiDirectional {
         ))
     }
 
-    fn _subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
+    /// Γ ⊢ e ⇒ ∀α. A
+    /// ----------------- (T-TApp)
+    /// Γ ⊢ e[B] ⇒ [B/α]A
+    fn infer_tapp(
+        &mut self,
+        ctx: &Context,
+        func: &Expr,
+        ty_arg: &Type,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let (func_ty, ctx1, tree1) = self.infer(ctx, func)?;
+        match func_ty {
+            Type::Forall(a, body_ty) => {
+                let result_ty = Self::subst_type(&a, ty_arg, &body_ty);
+                let output = format!("{} ⇒ {} ⊣ {}", input, result_ty, ctx1);
+                Ok((
+                    result_ty,
+                    ctx1,
+                    InferenceTree::new("InfApp", input, &output, vec![tree1]),
+                ))
+            }
+            _ => Err(TypeError::TypeApplicationError {
+                actual: func_ty.clone(),
+                expr: None,
+            }),
+        }
+    }
+
+    fn subst_type(var: &TyVar, replacement: &Type, ty: &Type) -> Type {
         match ty {
             Type::Var(name) if name == var => replacement.clone(),
             Type::ETVar(name) if name == var => replacement.clone(),
             Type::Var(_) | Type::ETVar(_) | Type::Int | Type::Bool => ty.clone(),
             Type::Arrow(t1, t2) => Type::Arrow(
-                Box::new(Self::_subst_type(var, replacement, t1)),
-                Box::new(Self::_subst_type(var, replacement, t2)),
+                Box::new(Self::subst_type(var, replacement, t1)),
+                Box::new(Self::subst_type(var, replacement, t2)),
             ),
             Type::Forall(bound_var, body) => {
                 if bound_var == var {
@@ -531,7 +559,7 @@ impl BiDirectional {
                 } else {
                     Type::Forall(
                         bound_var.clone(),
-                        Box::new(Self::_subst_type(var, replacement, body)),
+                        Box::new(Self::subst_type(var, replacement, body)),
                     )
                 }
             }
