@@ -136,7 +136,7 @@ impl BiDirectional {
             Expr::LitBool(b) => Self::infer_lit_bool(ctx, *b, &input),
             Expr::Abs(x, param_ty, body) => self.infer_abs(ctx, x, param_ty, body, &input),
             Expr::App(func, arg) => self.infer_application(ctx, func, arg, &input),
-            Expr::TAbs(_, _) => unimplemented!(),
+            Expr::TAbs(a, body) => self.infer_tabs(ctx, a, body, &input),
             Expr::TApp(_, _) => unimplemented!(),
             Expr::Let(x, e1, e2) => self.infer_let(ctx, x, e1, e2, &input),
             Expr::IfThenElse(e1, e2, e3) => self.infer_if(ctx, e1, e2, e3, &input),
@@ -477,6 +477,42 @@ impl BiDirectional {
             ty.clone(),
             ctx1,
             InferenceTree::new("InfAnn", input, &output, vec![tree]),
+        ))
+    }
+
+    /// Γ, α ⊢ e ⇒ A
+    /// ----------------- (T-TAbs)
+    /// Γ ⊢ Λα. e ⇒ ∀α. A
+    fn infer_tabs(
+        &mut self,
+        ctx: &Context,
+        a: &str,
+        body: &Expr,
+        input: &str,
+    ) -> TypeResult<(Type, Context, InferenceTree)> {
+        let mut new_ctx = ctx.clone();
+        new_ctx.push(Entry::TVarBnd(a.to_string()));
+        let (body_ty, ctx1, tree) = self.infer(&new_ctx, body)?;
+
+        // Apply context substitutions to resolve existential variables
+        // before removing type binding
+        let resolved_body_ty = Self::apply_ctx_type(&ctx1, &body_ty);
+
+        let (left, _, right) =
+            ctx1.break3(|entry| matches!(entry, Entry::TVarBnd(name) if name == a));
+        // Preserve solved existential variable bindings from the left context
+        let mut final_ctx_entries = left
+            .into_iter()
+            .filter(|entry| matches!(entry, Entry::SETVarBnd(_, _)))
+            .collect::<Vec<_>>();
+        final_ctx_entries.extend(right);
+        let final_ctx = Context(final_ctx_entries);
+        let result_ty = Type::Forall(a.to_string(), Box::new(resolved_body_ty));
+        let output = format!("{} ⇒ {} ⊣ {}", input, result_ty, final_ctx);
+        Ok((
+            result_ty,
+            final_ctx,
+            InferenceTree::new("InfTAbs", input, &output, vec![tree]),
         ))
     }
 
